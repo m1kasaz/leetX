@@ -10,3 +10,16 @@ export const captureIssueSchema = z.object({ type:z.literal('leetx/capture-issue
 export const inboundMessageSchema = z.discriminatedUnion('type',[captureSubmitSchema,captureVerdictSchema,captureIssueSchema]);
 export type CaptureSubmitMessage=z.infer<typeof captureSubmitSchema>; export type CaptureVerdictMessage=z.infer<typeof captureVerdictSchema>; export type CaptureIssueMessage=z.infer<typeof captureIssueSchema>; export type InboundMessage=z.infer<typeof inboundMessageSchema>;
 export function parseInboundMessage(raw: unknown): InboundMessage|null { const parsed=inboundMessageSchema.safeParse(raw); return parsed.success?parsed.data:null; }
+
+
+// Extension-page ↔ background protocol. Privileged variants are rejected for tab senders.
+export const aiSettingsPayloadSchema=z.object({baseUrl:z.string(),model:z.string(),timeout:z.number()});
+export const extensionRequestSchema=z.discriminatedUnion('type',[
+ z.object({type:z.literal('leetx/get-ai-settings')}),
+ z.object({type:z.literal('leetx/save-ai-settings'),settings:aiSettingsPayloadSchema,apiKey:z.string().optional()}),
+ z.object({type:z.literal('leetx/test-ai-connection'),settings:aiSettingsPayloadSchema,apiKey:z.string().optional()}),
+ z.object({type:z.literal('leetx/analyze-node'),current:z.unknown(),previous:z.unknown().optional()}),
+ z.object({type:z.literal('leetx/analyze-record'),problemKey:z.string(),submissions:z.array(z.unknown())}),
+ z.object({type:z.literal('leetx/list-analyses'),problemKey:z.string().optional()}),
+]);
+export type ExtensionRequest=z.infer<typeof extensionRequestSchema>;

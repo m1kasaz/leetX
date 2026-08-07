@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { applyTheme, loadTheme, nextTheme, saveTheme, type ThemeMode } from '../../src/theme';
 import type { CaptureEntry, IssueEntry } from '../../src/db/captureLog';
 
 interface Data { captures: CaptureEntry[]; issues: IssueEntry[] }
@@ -7,6 +8,7 @@ type Connection = 'connecting' | 'connected' | 'unsupported' | 'failed';
 export default function App() {
   const [data, setData] = useState<Data | null>(null);
   const [connection, setConnection] = useState<Connection>('connecting');
+  const [theme, setTheme] = useState<ThemeMode>('system');
 
   const loadData = useCallback(() => {
     void chrome.runtime.sendMessage({ type: 'leetx/list-captures' })
@@ -36,6 +38,7 @@ export default function App() {
   useEffect(() => {
     loadData();
     void connectCurrentPage();
+    void loadTheme().then((value) => { setTheme(value); applyTheme(value); });
   }, [connectCurrentPage, loadData]);
 
   const openWorkbench = () => void chrome.tabs.create({ url: chrome.runtime.getURL('/app.html') });
@@ -51,6 +54,7 @@ export default function App() {
     <main className="popup">
       <header>
         <div><b>leetX</b><span>本地采集运行中</span></div>
+        <button className="theme" onClick={() => { const value = nextTheme(theme); setTheme(value); void saveTheme(value); }}>◐ {theme}</button>
         <i className={connection === 'connected' ? '' : 'inactive'} />
       </header>
       <button className={`connection ${connection}`} onClick={() => void connectCurrentPage()}>

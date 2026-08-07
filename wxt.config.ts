@@ -16,6 +16,7 @@ export default defineConfig({
     key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxCo84YtdnQEi9QNOrE3rZQUDLBaRKXHXiWM1041KjX5NYlhI71QKZLRvGSs5pMcGEWUlmHFep0L/jckBpy4T4u4VUjMrZN5P4+ddyqy2S/wrn6OfFxFxL366C6vGokgO6jYfwFjwxliH4dVi7et/96fgsp54Bmn4MP1UktU2Bv0G8uTPY38xFuBa3S4RO8yjaPHbhNByCgdoK140QEICWrsrATcyMGsfhtplede1YTsDw1Ykg4K87URTeGiRisixYiebhcIqR+3MlmRGbkwSbFDJEPT/+tSi12jbivl65pFfWAPRfyhGjmyCZgy7Z/KsRG9Yw5kNxF8+9Gy0dxXxjQIDAQAB',
     permissions: ['storage', 'activeTab', 'scripting'],
     host_permissions: supportedOrigins,
+    optional_host_permissions: ['https://*/*', 'http://localhost/*', 'http://127.0.0.1/*'],
     web_accessible_resources: [{
       resources: ['pageBridge.js'],
       matches: supportedOrigins,
