@@ -1,0 +1,4 @@
+import type{TerminalVerdict}from'../types';import{extractMetric,normalizeVerdict,type VerdictRule}from'../../capture/normalize';
+export const LEETCODE_VERDICT_RULES:VerdictRule[]=[[/^(通过|Accepted)\b/i,'accepted'],[/解答错误|Wrong Answer/i,'wrong_answer'],[/超出时间限制|Time Limit Exceeded/i,'time_limit_exceeded'],[/超出内存限制|Memory Limit Exceeded/i,'memory_limit_exceeded'],[/运行时错误|Runtime Error/i,'runtime_error'],[/编译错误|Compile Error|Compilation Error/i,'compile_error'],[/超出输出限制|Output Limit Exceeded/i,'output_limit_exceeded']];
+export function normalizeLeetCodeVerdict(raw:string):TerminalVerdict{return normalizeVerdict(raw,LEETCODE_VERDICT_RULES)}
+export function extractLeetCodeMetrics(text:string):{runtimeText?:string;memoryText?:string}{return{runtimeText:extractMetric(text,/执行用时|Runtime/i),memoryText:extractMetric(text,/消耗内存|Memory/i)}}

@@ -1,0 +1,2 @@
+import{listCaptures,type StorageLike}from'../src/db/captureLog';import{createMessageHandler}from'../src/messaging/handlers';
+export default defineBackground(()=>{const storage:StorageLike={get:key=>chrome.storage.local.get(key),set:items=>chrome.storage.local.set(items)};const handle=createMessageHandler(storage);chrome.runtime.onMessage.addListener((raw,_sender,sendResponse)=>{if((raw as {type?:string}|null)?.type==='leetx/list-captures')void listCaptures(storage).then(sendResponse);else void handle(raw).then(sendResponse);return true})});

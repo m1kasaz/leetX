@@ -1,0 +1,3 @@
+import type{StorageLike}from'../db/captureLog';import{appendIssue,mergeVerdict,saveSubmit}from'../db/captureLog';import{parseInboundMessage}from'./messages';
+export interface HandlerResult{ok:boolean;reason:string}
+export function createMessageHandler(storage:StorageLike,now:()=>number=Date.now):(raw:unknown)=>Promise<HandlerResult>{return async raw=>{const msg=parseInboundMessage(raw);if(!msg)return{ok:false,reason:'invalid-message'};switch(msg.type){case'leetx/capture-submit':return{ok:true,reason:await saveSubmit(storage,msg,now)};case'leetx/capture-verdict':return{ok:true,reason:await mergeVerdict(storage,msg,now)};case'leetx/capture-issue':await appendIssue(storage,msg,now);return{ok:true,reason:'logged'}}}}

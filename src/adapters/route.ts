@@ -1,0 +1,2 @@
+export interface RouteWatchOptions{intervalMs?:number}
+export function observeSpaRouteChange(callback:()=>void,options:RouteWatchOptions={}):()=>void{let last=location.href;const check=()=>{if(location.href!==last){last=location.href;callback()}};window.addEventListener('popstate',check);const timer=setInterval(check,options.intervalMs??500);return()=>{window.removeEventListener('popstate',check);clearInterval(timer)}}

@@ -1,0 +1,3 @@
+import type{CodeSnapshot,SnapshotProvider}from'../types';import{LEETCODE_SELECTORS}from'./selectors';
+function language():string{for(const el of document.querySelectorAll(LEETCODE_SELECTORS.languageButtons)){const text=el.textContent?.trim();if(text&&text.length<=20)return text}return''}
+export async function readLeetCodeSnapshot(bridge:SnapshotProvider):Promise<CodeSnapshot|null>{const value=await bridge.getEditorSnapshot();if(value?.code.trim())return{code:value.code,language:value.language||language(),method:'editor-model'};const code=document.querySelector(LEETCODE_SELECTORS.renderedCode)?.textContent??'';return code.trim()?{code,language:language(),method:'rendered-code'}:null}

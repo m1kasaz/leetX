@@ -1,0 +1,3 @@
+import type{CodeSnapshot,SnapshotProvider}from'../types';import{LUOGU_SELECTORS as S}from'./selectors';
+function language():string{for(const el of document.querySelectorAll(S.languageButtons)){if(el instanceof HTMLSelectElement){const text=el.selectedOptions[0]?.textContent?.trim();if(text)return text}else{const text=el.textContent?.trim();if(text&&text.length<=20)return text}}return''}
+export async function readLuoguSnapshot(bridge:SnapshotProvider):Promise<CodeSnapshot|null>{const value=await bridge.getEditorSnapshot();if(value?.code.trim())return{code:value.code,language:value.language||language(),method:'editor-model'};const code=document.querySelector(S.renderedCode)?.textContent??'';return code.trim()?{code,language:language(),method:'rendered-code'}:null}

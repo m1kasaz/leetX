@@ -6,7 +6,7 @@
 
 依据 `plan.md` 第 12/15 节,只做阶段 0:构建最小 Manifest V3 扩展,在真实的力扣(leetcode.cn / leetcode.com)与洛谷(www.luogu.com.cn)题目页上验证四类数据可稳定采集:**题目标识、完整代码、提交动作(按钮+快捷键)、判题结果**。采集结果落 `chrome.storage.local`,用一个最小 Popup 展示最近记录,使失败可见。
 
-**验收(对应 plan.md 阶段 0 Go/No-Go)**:两站各至少 2 道题、2 种语言,代码/时间/状态可稳定保存;采集失败时有明确原因记录而非静默丢失。本阶段不做三栏 UI、不做会话聚合、不接 AI、不引入 Dexie/Tailwind。
+**验收(对应 plan.md 阶段 0 Go/No-Go)**:两站各至少 2 道题、2 种语言,代码/时间/状态可稳定保存;采集失败时有明确原因记录而非静默丢失。采集能力仍严格限定在阶段 0,不做会话自动聚合和真实 AI 调用;但正式扩展页面采用已经确认的三栏产品视觉,以本地捕获数据展示“记录 → 多次提交 → 代码与分析”的最终交互框架。
 
 ## Architecture(架构)
 
@@ -27,7 +27,17 @@ flowchart LR
 
 ## Tech Stack(技术栈)
 
-WXT ^0.20、TypeScript、React 18(仅 Popup)、zod、Vitest + jsdom。Chrome/Edge MV3。阶段 1 才引入 Dexie、Tailwind、Playwright。
+WXT ^0.20、TypeScript、React 18(Popup 与独立工作台)、zod、Vitest + jsdom。Chrome/Edge MV3。阶段 0 的捕获日志继续使用 `chrome.storage.local`;阶段 1 才引入 Dexie 与真实 AI Provider。
+
+## Confirmed Product UI(已确认产品视觉)
+
+正式界面以 `leetx-demo/` 为唯一视觉基线,打开后直接进入产品工作台,不增加营销介绍、功能引导或演示封面。整体采用深色极客风格,背景色 `#080b13`,面板色 `#0e1420`,主强调色 `#b9f45c`,错误色 `#ff6c7a`,LeetCode 辅助色 `#ffb65f`,洛谷辅助色 `#61d9dd`;正文使用 Manrope,代码与元数据使用 DM Mono,面板圆角 10–12px,边框使用低透明度白色。
+
+工作台固定采用“记录 → 多次提交 → 代码与分析”三栏信息架构。左栏展示按平台筛选的刷题记录;每条记录必须对应同平台、同题目的多次提交,Stage 0 尚未实现自动时间窗口聚合时,先按 `platform + problemKey` 对捕获日志进行只读分组。中栏展示当前记录的纵向提交时间线,节点包含序号、提交时间、语言、采集方式与判题状态。右栏占据最大宽度,同时展示当前代码、与上次提交的简单行级对比、节点采集分析以及记录总结。
+
+Stage 0 不调用真实大模型。分析区域必须明确标识为“本地采集分析”,内容根据已采集字段确定性生成,例如代码长度变化、判题状态演进、采集方式、完整性与时间/空间复杂度待 AI 接入等;不得伪装为真实 AI 结论。后续接入 Provider 后复用同一组件和布局替换数据源。
+
+Popup 只保留采集状态、最近提交、异常数量和“打开完整工作台”按钮,不承载三栏界面。独立工作台入口为 `entrypoints/app/`,使用 `browser.runtime.getURL('/app.html')` 或等价 WXT 入口打开。响应式规则为:桌面端三栏;中等宽度压缩左/中栏;窄屏按记录、时间线、详情顺序纵向排列。
 
 ## Global Constraints(全局约束)
 
