@@ -13,6 +13,12 @@ export default defineContentScript({
   ],
   runAt: 'document_idle',
   main() {
+    if (document.documentElement.dataset.leetxContentReady === 'true') {
+      console.info('[leetX] Capture already initialized');
+      return;
+    }
+    document.documentElement.dataset.leetxContentReady = 'true';
+
     const nonce = crypto.randomUUID();
     document.documentElement.dataset.leetxNonce = nonce;
 
