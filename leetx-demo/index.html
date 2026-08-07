@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b1020" />
+    <title>leetX · 阶段 0 采集状态 Demo</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="demo-shell">
+      <section class="intro" aria-labelledby="intro-title">
+        <div class="eyebrow"><span></span> STAGE 0 · CAPTURE LAB</div>
+        <h1 id="intro-title">让每一次提交<br />都有迹可循。</h1>
+        <p class="intro-copy">这是 leetX 阶段 0 的前端效果预览：聚焦题目标识、代码快照、提交动作与判题结果，让采集成功与失败都清晰可见。</p>
+        <div class="feature-grid">
+          <article><b>01</b><span>本地优先</span><small>数据仅保存在浏览器</small></article>
+          <article><b>02</b><span>双站适配</span><small>LeetCode · 洛谷</small></article>
+          <article><b>03</b><span>失败可见</span><small>不再静默丢失记录</small></article>
+        </div>
+        <div class="demo-hint">
+          <span class="mouse-icon"></span>
+          点击提交记录查看代码快照，或模拟一次新提交
+        </div>
+      </section>
+
+      <section class="preview-area" aria-label="扩展 Popup 预览">
+        <div class="browser-bar">
+          <div class="browser-dots"><i></i><i></i><i></i></div>
+          <div class="address"><span class="lock">◆</span> leetcode.cn/problems/two-sum</div>
+          <button class="extension-button" aria-label="leetX 扩展">LX</button>
+        </div>
+
+        <div class="popup" id="popup">
+          <header class="popup-header">
+            <div class="brand">
+              <div class="brand-mark">L<span>X</span></div>
+              <div><strong>leetX</strong><small>采集控制台</small></div>
+            </div>
+            <div class="live-status"><i></i>采集中</div>
+          </header>
+
+          <section class="stats" aria-label="采集统计">
+            <div><strong id="capture-count">6</strong><span>提交快照</span></div>
+            <div><strong>2</strong><span>已适配站点</span></div>
+            <div class="warning-stat"><strong id="issue-count">1</strong><span>待处理异常</span></div>
+          </section>
+
+          <nav class="filters" aria-label="平台筛选">
+            <button class="filter active" data-filter="all">全部</button>
+            <button class="filter" data-filter="leetcode">LeetCode</button>
+            <button class="filter" data-filter="luogu">洛谷</button>
+            <button class="icon-button" id="refresh-button" aria-label="刷新记录">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"/></svg>
+            </button>
+          </nav>
+
+          <section class="capture-list" id="capture-list" aria-label="最近提交">
+            <button class="capture-card selected" data-platform="leetcode" data-code="class Solution:\n    def twoSum(self, nums, target):\n        seen = {}\n        for index, value in enumerate(nums):\n            need = target - value\n            if need in seen:\n                return [seen[need], index]\n            seen[value] = index">
+              <span class="platform-logo lc">LC</span>
+              <span class="card-content">
+                <span class="card-row"><strong>1. 两数之和</strong><em class="verdict accepted">Accepted</em></span>
+                <span class="meta">Python3 <i></i> 15:42:08 <i></i> editor-model</span>
+              </span>
+              <span class="chevron">›</span>
+            </button>
+
+            <button class="capture-card" data-platform="luogu" data-code="#include &lt;bits/stdc++.h&gt;\nusing namespace std;\n\nint main() {\n    int a, b;\n    cin &gt;&gt; a &gt;&gt; b;\n    cout &lt;&lt; a + b;\n    return 0;\n}">
+              <span class="platform-logo lg">LG</span>
+              <span class="card-content">
+                <span class="card-row"><strong>P1001 A+B Problem</strong><em class="verdict accepted">Accepted</em></span>
+                <span class="meta">C++14 <i></i> 15:18:31 <i></i> editor-model</span>
+              </span>
+              <span class="chevron">›</span>
+            </button>
+
+            <button class="capture-card" data-platform="leetcode" data-code="class Solution:\n    def isValid(self, s: str) -&gt; bool:\n        stack = []\n        pairs = {')': '(', ']': '[', '}': '{'}\n        for char in s:\n            if char in pairs:\n                if not stack or stack.pop() != pairs[char]:\n                    return False\n            else:\n                stack.append(char)\n        return not stack">
+              <span class="platform-logo lc">LC</span>
+              <span class="card-content">
+                <span class="card-row"><strong>20. 有效的括号</strong><em class="verdict wrong">Wrong Answer</em></span>
+                <span class="meta">Python3 <i></i> 14:56:12 <i></i> textarea</span>
+              </span>
+              <span class="chevron">›</span>
+            </button>
+
+            <button class="capture-card" data-platform="luogu" data-code="pending snapshot...">
+              <span class="platform-logo lg">LG</span>
+              <span class="card-content">
+                <span class="card-row"><strong>P5703 苹果采购</strong><em class="verdict pending">判题中</em></span>
+                <span class="meta">C++14 <i></i> 14:35:47 <i></i> editor-model</span>
+              </span>
+              <span class="spinner"></span>
+            </button>
+          </section>
+
+          <section class="detail-panel" id="detail-panel">
+            <div class="detail-head">
+              <div><span>代码快照</span><small>完整采集 · 342 chars</small></div>
+              <button id="close-detail" aria-label="关闭代码快照">×</button>
+            </div>
+            <pre><code id="code-preview"></code></pre>
+          </section>
+
+          <section class="issue-panel">
+            <div class="issue-icon">!</div>
+            <div><strong>1 个采集异常需要关注</strong><p>[leetcode-cn] 暂未识别语言，已保存完整代码</p></div>
+            <button aria-label="查看异常">›</button>
+          </section>
+
+          <footer>
+            <span><i></i> 本地存储正常</span>
+            <button id="simulate-button">模拟新提交 <b>＋</b></button>
+          </footer>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status">已捕获新的代码快照</div>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
