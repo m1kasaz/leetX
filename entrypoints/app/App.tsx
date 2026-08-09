@@ -139,11 +139,7 @@ export default function App() {
         <TimelinePanel
           group={group}
           current={current}
-          recordAI={recordAI}
-          stream={stream}
           onSelect={setCaptureId}
-          onRunRecord={() => run('record')}
-          onCancel={cancelStream}
         />
         <DetailPanel
           group={group}
@@ -154,9 +150,10 @@ export default function App() {
           onToggleDiff={setShowDiff}
           local={local}
           nodeAI={nodeAI}
+          recordAI={recordAI}
           stream={stream}
           error={error}
-          onRunNode={() => run('node')}
+          onRun={(scope) => run(scope)}
           onCancel={cancelStream}
         />
       </main>

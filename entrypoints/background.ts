@@ -4,6 +4,7 @@ import { aiSettingsSchema, DEFAULT_AI_SETTINGS, endpointOrigin, type AISettings 
 import { requestOpenAI } from '../src/ai/provider';
 import { nodeAnalysisPrompt, recordAnalysisPrompt } from '../src/ai/prompts';
 import { listAnalyses, saveAnalysis } from '../src/ai/storage';
+import { startKeepAlive } from '../src/ai/keepAlive';
 import { AI_STREAM_PORT } from '../src/ai/streamProtocol';
 import { handleStreamPort } from '../src/ai/streamServer';
 
@@ -40,9 +41,14 @@ export default defineBackground(()=>{
     if (port.name !== AI_STREAM_PORT) return;
     const url = port.sender?.url ?? '';
     if (port.sender?.id !== chrome.runtime.id || !url.startsWith(chrome.runtime.getURL('/'))) {
+      try { port.postMessage({ kind: 'error', message: '仅扩展页面可调用 AI' }); } catch { /* sender gone */ }
       port.disconnect();
       return;
     }
+    // A buffered provider response can keep the worker waiting >30s; without
+    // extension activity Chrome kills the worker and the port drops silently.
+    const stopKeepAlive = startKeepAlive(() => { void chrome.runtime.getPlatformInfo(); });
+    port.onDisconnect.addListener(stopKeepAlive);
     handleStreamPort(port, { loadSettings: settings, loadApiKey: key, requirePermission, storage });
   });
 });

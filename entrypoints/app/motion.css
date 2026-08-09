@@ -49,6 +49,11 @@
 }
 @keyframes ai-in { from { opacity: 0; } to { opacity: 1; } }
 .ai-result { animation: ai-in 160ms ease-out; }
+.ai-doc { animation: ai-in 160ms ease-out; }
+
+/* Streaming indicator dot on scope tabs */
+@keyframes dot-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.75); } }
+.ai-dot { animation: dot-pulse 1s ease-in-out infinite; }
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {

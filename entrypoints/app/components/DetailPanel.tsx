@@ -15,12 +15,13 @@ export function DetailPanel(props: {
   onToggleDiff(value: boolean): void;
   local?: LocalAnalysis;
   nodeAI?: SavedAnalysis;
+  recordAI?: SavedAnalysis;
   stream: StreamState | null;
   error: string;
-  onRunNode(): void;
+  onRun(scope: 'node' | 'record'): void;
   onCancel(): void;
 }) {
-  const { group, current, index, previous, showDiff, onToggleDiff, local, nodeAI, stream, error, onRunNode, onCancel } = props;
+  const { group, current, index, previous, showDiff, onToggleDiff, local, nodeAI, recordAI, stream, error, onRun, onCancel } = props;
   return (
     <section className="detail">
       {current && group && local ? (
@@ -55,10 +56,11 @@ export function DetailPanel(props: {
             </article>
             <AnalysisPanel
               local={local}
-              analysis={nodeAI}
-              streaming={stream?.scope === 'node' ? stream.text : null}
+              nodeAnalysis={nodeAI}
+              recordAnalysis={recordAI}
+              stream={stream}
               error={error}
-              onRun={onRunNode}
+              onRun={onRun}
               onCancel={onCancel}
             />
           </div>
