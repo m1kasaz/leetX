@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CaptureEntry, IssueEntry } from '../../src/db/captureLog';
 import type { SavedAnalysis } from '../../src/ai/storage';
+import { streamAnalysis } from '../../src/ai/streamClient';
+import type { StreamStart } from '../../src/ai/streamProtocol';
 import type { ThemeMode } from '../../src/theme';
 import { applyTheme, loadTheme, nextTheme, saveTheme } from '../../src/theme';
 import { analyzeCapture, groupCaptures } from '../../src/workbench/analysis';
@@ -10,7 +12,7 @@ import { RecordList } from './components/RecordList';
 import { SettingsModal } from './components/SettingsModal';
 import { TimelinePanel } from './components/TimelinePanel';
 import { TopBar } from './components/TopBar';
-import type { Filter, SettingsView } from './components/types';
+import type { Filter, SettingsView, StreamState } from './components/types';
 
 interface Data {
   captures: CaptureEntry[];
@@ -31,6 +33,8 @@ export default function App() {
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
   const [analyses, setAnalyses] = useState<SavedAnalysis[]>([]);
+  const [stream, setStream] = useState<StreamState | null>(null);
+  const cancelRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     void chrome.runtime.sendMessage({ type: 'leetx/list-captures' }).then(setData);
@@ -56,6 +60,7 @@ export default function App() {
   const previous = group && index > 0 ? group.submissions[index - 1] : undefined;
   const local = current ? analyzeCapture(current, previous) : undefined;
   const nodeAI = analyses.find((x) => x.id === `node:${current?.captureId}`);
+  const recordAI = analyses.find((x) => x.id === `record:${group?.problemKey}`);
 
   useEffect(() => {
     if (group) void chrome.runtime.sendMessage({ type: 'leetx/list-analyses', problemKey: group.problemKey }).then(setAnalyses);
@@ -86,20 +91,33 @@ export default function App() {
     else { setSettingsOpen(false); setApiKey(''); }
   }
 
-  async function run(scope: 'node' | 'record') {
-    if (!current || !group) return;
-    setBusy(scope);
+  function run(scope: 'node' | 'record') {
+    if (!current || !group || stream) return;
     setError('');
-    const result = await chrome.runtime.sendMessage(scope === 'node'
-      ? { type: 'leetx/analyze-node', current, previous }
-      : { type: 'leetx/analyze-record', problemKey: group.problemKey, submissions: group.submissions });
-    setBusy('');
-    if (result.ok === false) {
-      setError(result.error);
-      if (String(result.error).includes('配置')) void openSettings();
-    } else {
-      setAnalyses((x) => [...x.filter((a) => a.id !== result.id), result]);
-    }
+    const request: StreamStart = scope === 'node'
+      ? { kind: 'start', scope, current, previous }
+      : { kind: 'start', scope, problemKey: group.problemKey, submissions: group.submissions };
+    setStream({ scope, text: '' });
+    cancelRef.current = streamAnalysis(request, {
+      onDelta: (text) => setStream((s) => (s ? { ...s, text: s.text + text } : s)),
+      onDone: (analysis) => {
+        setStream(null);
+        cancelRef.current = null;
+        setAnalyses((list) => [...list.filter((a) => a.id !== analysis.id), analysis]);
+      },
+      onError: (message) => {
+        setStream(null);
+        cancelRef.current = null;
+        setError(message);
+        if (message.includes('配置')) void openSettings();
+      },
+    });
+  }
+
+  function cancelStream() {
+    cancelRef.current?.();
+    cancelRef.current = null;
+    setStream(null);
   }
 
   return (
@@ -121,10 +139,11 @@ export default function App() {
         <TimelinePanel
           group={group}
           current={current}
-          stream={null}
+          recordAI={recordAI}
+          stream={stream}
           onSelect={setCaptureId}
-          onRunRecord={() => void run('record')}
-          onCancel={() => {}}
+          onRunRecord={() => run('record')}
+          onCancel={cancelStream}
         />
         <DetailPanel
           group={group}
@@ -135,10 +154,10 @@ export default function App() {
           onToggleDiff={setShowDiff}
           local={local}
           nodeAI={nodeAI}
-          stream={null}
+          stream={stream}
           error={error}
-          onRunNode={() => void run('node')}
-          onCancel={() => {}}
+          onRunNode={() => run('node')}
+          onCancel={cancelStream}
         />
       </main>
       {settingsOpen && (

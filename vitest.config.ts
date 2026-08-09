@@ -9,5 +9,6 @@ export default defineConfig({
     include: ['src/**/*.test.{ts,tsx}', 'entrypoints/**/*.test.{ts,tsx}'],
     setupFiles: ['vitest.setup.ts'],
   },
+  esbuild: { jsx: 'automatic' },
   resolve: { alias: { '@': path.resolve(dirname, 'src') } },
 });

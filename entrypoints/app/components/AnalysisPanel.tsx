@@ -10,7 +10,7 @@ export function AnalysisPanel(props: {
   onRun(): void;
   onCancel(): void;
 }) {
-  const { local, analysis, error, onRun } = props;
+  const { local, analysis, streaming, error, onRun, onCancel } = props;
   return (
     <article className="analysis">
       <header>
@@ -24,10 +24,18 @@ export function AnalysisPanel(props: {
       <header>
         <span>AI</span>
         <div><b>AI 分析</b><small>仅在明确点击后请求</small></div>
-        <button onClick={onRun}>{analysis ? '重试' : '开始分析'}</button>
+        {streaming != null
+          ? <button onClick={onCancel}>取消</button>
+          : <button onClick={onRun}>{analysis ? '重试' : '开始分析'}</button>}
       </header>
       {error && <p className="error">{error}</p>}
-      {analysis ? <AnalysisResult analysis={analysis} /> : null}
+      {streaming != null && (
+        <pre className="ai-result streaming">
+          {streaming || '正在连接模型…'}
+          <span className="stream-cursor" aria-hidden="true" />
+        </pre>
+      )}
+      {streaming == null && <AnalysisResult analysis={analysis} />}
     </article>
   );
 }
