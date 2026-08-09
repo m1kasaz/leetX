@@ -16,5 +16,5 @@ export const aiSettingsSchema = z.object({
 });
 export type AISettings = z.infer<typeof aiSettingsSchema>;
 export interface AISettingsView { baseUrl: string; model: string; timeout: number; hasApiKey: boolean }
-export const DEFAULT_AI_SETTINGS: AISettings = { baseUrl: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o-mini', timeout: 30000 };
+export const DEFAULT_AI_SETTINGS: AISettings = { baseUrl: '', model: '', timeout: 180000 };
 export function endpointOrigin(baseUrl: string): string { return `${new URL(baseUrl).origin}/*`; }
