@@ -1,0 +1,60 @@
+/* Motion tokens */
+:root {
+  --dur-fast: 120ms;
+  --dur: 200ms;
+  --dur-slow: 320ms;
+  --ease: cubic-bezier(.2, .7, .3, 1);
+}
+
+/* Theme switch + hover color transitions */
+.topbar, .records, .timeline-panel, .detail, .code-card, .analysis, .modal form,
+.record, .node, .filters button, .top-actions button, .code-card button,
+.analysis header button, .modal button, .ok, .bad {
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+/* Record list stagger-in */
+@keyframes record-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.record-list .record { animation: record-in var(--dur) var(--ease) backwards; }
+.record-list .record:nth-child(2) { animation-delay: 20ms; }
+.record-list .record:nth-child(3) { animation-delay: 40ms; }
+.record-list .record:nth-child(4) { animation-delay: 60ms; }
+.record-list .record:nth-child(5) { animation-delay: 80ms; }
+.record-list .record:nth-child(6) { animation-delay: 100ms; }
+.record-list .record:nth-child(7) { animation-delay: 120ms; }
+.record-list .record:nth-child(n+8) { animation-delay: 140ms; }
+
+/* Timeline node selection */
+.node > span { transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease); }
+.node.active > span { box-shadow: 0 0 0 3px color-mix(in srgb, var(--lime) 25%, transparent); }
+@keyframes node-pop { 0% { transform: scale(.6); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
+.node.active > span { animation: node-pop var(--dur-slow) var(--ease); }
+
+/* Detail content switch fade */
+@keyframes detail-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.detail-swap { animation: detail-in var(--dur-fast) var(--ease); }
+
+/* Modal */
+@keyframes modal-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modal-panel-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.modal { animation: modal-in var(--dur-fast) ease-out; }
+.modal form { animation: modal-panel-in var(--dur) var(--ease); }
+
+/* AI streaming cursor + result fade */
+@keyframes cursor-breathe { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+.stream-cursor {
+  display: inline-block; width: 8px; height: 14px; margin-left: 2px;
+  vertical-align: -2px; background: var(--lime);
+  animation: cursor-breathe 1s ease-in-out infinite;
+}
+@keyframes ai-in { from { opacity: 0; } to { opacity: 1; } }
+.ai-result { animation: ai-in 160ms ease-out; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: .01ms !important;
+  }
+}

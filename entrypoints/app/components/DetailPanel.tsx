@@ -24,7 +24,7 @@ export function DetailPanel(props: {
   return (
     <section className="detail">
       {current && group && local ? (
-        <>
+        <div className="detail-swap" key={current.captureId}>
           <header>
             <div><span>记录</span> / {group.problemKey} / 第 {index + 1} 次提交</div>
             <div>{current.language} · {current.code.length} chars</div>
@@ -62,7 +62,7 @@ export function DetailPanel(props: {
               onCancel={onCancel}
             />
           </div>
-        </>
+        </div>
       ) : (
         <Empty text="选择或产生一条采集记录" />
       )}
