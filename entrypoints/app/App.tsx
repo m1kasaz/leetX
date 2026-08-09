@@ -1,4 +1,160 @@
-import{useEffect,useMemo,useState}from'react';import type{CaptureEntry,IssueEntry}from'../../src/db/captureLog';import type{SavedAnalysis}from'../../src/ai/storage';import type{ThemeMode}from'../../src/theme';import{applyTheme,loadTheme,nextTheme,saveTheme}from'../../src/theme';import{analyzeCapture,groupCaptures,summarizeGroup}from'../../src/workbench/analysis';import{diffLines}from'../../src/workbench/diff';
-interface Data{captures:CaptureEntry[];issues:IssueEntry[]}type Filter='all'|'leetcode'|'luogu';type Settings={baseUrl:string;model:string;timeout:number;hasApiKey?:boolean};const verdictName:Record<string,string>={accepted:'通过',wrong_answer:'答案错误',time_limit_exceeded:'超时',memory_limit_exceeded:'超内存',runtime_error:'运行错误',compile_error:'编译错误',unknown:'未知'};const time=(v:number)=>new Date(v).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
-export default function App(){const[data,setData]=useState<Data>({captures:[],issues:[]}),[filter,setFilter]=useState<Filter>('all'),[groupKey,setGroupKey]=useState(''),[captureId,setCaptureId]=useState(''),[showDiff,setShowDiff]=useState(false),[theme,setTheme]=useState<ThemeMode>('system'),[settingsOpen,setSettingsOpen]=useState(false),[settings,setSettings]=useState<Settings>({baseUrl:'',model:'',timeout:30000}),[apiKey,setApiKey]=useState(''),[busy,setBusy]=useState(''),[error,setError]=useState(''),[analyses,setAnalyses]=useState<SavedAnalysis[]>([]);useEffect(()=>{void chrome.runtime.sendMessage({type:'leetx/list-captures'}).then(setData);void loadTheme().then(x=>{setTheme(x);applyTheme(x)});const listener=(changes:{[key:string]:chrome.storage.StorageChange})=>{if(changes['leetx:theme'])void loadTheme().then(x=>{setTheme(x);applyTheme(x)})};chrome.storage.onChanged.addListener(listener);return()=>chrome.storage.onChanged.removeListener(listener)},[]);const groups=useMemo(()=>groupCaptures(data.captures),[data]);const visible=groups.filter(g=>filter==='all'||(filter==='luogu'?g.platform==='luogu':g.platform.startsWith('leetcode'))),group=visible.find(x=>x.key===groupKey)??visible[0],current=group?.submissions.find(x=>x.captureId===captureId)??group?.submissions.at(-1),index=current&&group?group.submissions.indexOf(current):-1,previous=group&&index>0?group.submissions[index-1]:undefined,local=current?analyzeCapture(current,previous):null,nodeAI=analyses.find(x=>x.id===`node:${current?.captureId}`),recordAI=analyses.find(x=>x.id===`record:${group?.problemKey}`);useEffect(()=>{if(group)void chrome.runtime.sendMessage({type:'leetx/list-analyses',problemKey:group.problemKey}).then(setAnalyses)},[group?.problemKey]);async function openSettings(){const value=await chrome.runtime.sendMessage({type:'leetx/get-ai-settings'}) as Settings;setSettings(value);setSettingsOpen(true)}async function configure(action:'save'|'test'){setBusy(action);setError('');const result=await chrome.runtime.sendMessage({type:action==='save'?'leetx/save-ai-settings':'leetx/test-ai-connection',settings,apiKey:apiKey||undefined});setBusy('');if(!result.ok)setError(result.error);else if(action==='save'){setSettingsOpen(false);setApiKey('')}}async function run(scope:'node'|'record'){if(!current||!group)return;setBusy(scope);setError('');const result=await chrome.runtime.sendMessage(scope==='node'?{type:'leetx/analyze-node',current,previous}:{type:'leetx/analyze-record',problemKey:group.problemKey,submissions:group.submissions});setBusy('');if(result.ok===false){setError(result.error);if(String(result.error).includes('配置'))void openSettings()}else setAnalyses(x=>[...x.filter(a=>a.id!==result.id),result])}const renderAI=(x?:SavedAnalysis)=>x?<pre className="ai-result">{x.content.kind==='json'?JSON.stringify(x.content.value,null,2):x.content.value}</pre>:<p className="muted">尚未调用 AI，不会自动产生费用。</p>;return <div className="shell"><header className="topbar"><div className="brand"><span>lX</span><div><b>leetX</b><small>LOCAL PRACTICE CAPTURE</small></div></div><div className="state"><i/> 本地采集已启用 <b>STAGE 0</b></div><div className="top-actions"><span>{data.captures.length} 次提交</span><button onClick={()=>{const n=nextTheme(theme);setTheme(n);void saveTheme(n)}}>◐ {theme}</button><button onClick={()=>void openSettings()}>⚙ 设置</button></div></header><main className="workspace"><aside className="records"><div className="heading"><small>CAPTURE RECORDS</small><h1>刷题记录</h1><p>按平台与题目标识只读分组</p></div><div className="filters">{(['all','leetcode','luogu']as Filter[]).map(x=><button className={filter===x?'active':''} onClick={()=>{setFilter(x);setGroupKey('')}} key={x}>{x==='all'?'全部':x}</button>)}</div><div className="record-list">{visible.map(x=><button key={x.key} className={`record ${group?.key===x.key?'active':''}`} onClick={()=>{setGroupKey(x.key);setCaptureId('')}}><div><em>{x.platform}</em><time>{time(x.latestAt)}</time></div><h3>{x.title||x.problemKey}</h3><p>{x.problemKey}<b>{x.submissions.length} 次</b></p></button>)}</div></aside><section className="timeline-panel">{group&&<><div className="problem"><span>LC</span><div><small>{group.platform}</small><h2>{group.title||group.problemKey}</h2></div></div><div className="summary">{summarizeGroup(group)} <button onClick={()=>void run('record')} disabled={busy==='record'}>{busy==='record'?'分析中…':recordAI?'重新进行最终 AI 分析':'最终 AI 分析'}</button></div>{recordAI&&renderAI(recordAI)}<div className="timeline">{group.submissions.map((x,i)=><button className={`node ${current?.captureId===x.captureId?'active':''}`} onClick={()=>setCaptureId(x.captureId)} key={x.captureId}><span>{String(i+1).padStart(2,'0')}</span><div><b>第 {i+1} 次提交</b><time>{time(x.submittedAt)}</time><p>{x.language} · <em className={x.verdict==='accepted'?'ok':'bad'}>{verdictName[x.verdict??'']??'等待终态'}</em></p></div></button>)}</div></>}</section><section className="detail">{current&&group&&local?<><header><div><span>记录</span> / {group.problemKey} / 第 {index+1} 次提交</div><div>{current.language} · {current.code.length} chars</div></header><div className="insight"><span>✦</span><div><small>记录总结 · 确定性生成</small><b>{summarizeGroup(group)}</b></div></div><div className="detail-grid"><article className="code-card"><header><div className="dots">● ● ● <b>{current.language}</b></div><div><button className={!showDiff?'active':''} onClick={()=>setShowDiff(false)}>当前代码</button><button className={showDiff?'active':''} onClick={()=>setShowDiff(true)}>行级 Diff</button></div></header>{showDiff?<pre className="diff">{diffLines(previous?.code??'',current.code).map((l,i)=><code className={l.kind} key={i}><span>{l.kind==='added'?'+':l.kind==='removed'?'-':' '}</span>{l.text}{'\n'}</code>)}</pre>:<pre>{current.code}</pre>}<footer>{current.captureMethod}<span>{current.code.split('\n').length} lines</span></footer></article><article className="analysis"><header><span>✦</span><div><b>本地采集分析</b><small>DETERMINISTIC · 非 AI</small></div></header><section><h3>{local.headline}</h3><ul>{local.facts.map(x=><li key={x}>{x}</li>)}</ul></section><header><span>AI</span><div><b>AI 分析</b><small>仅在明确点击后请求</small></div><button onClick={()=>void run('node')} disabled={busy==='node'}>{busy==='node'?'分析中…':nodeAI?'重试':'开始分析'}</button></header>{error&&<p className="error">{error}</p>}{renderAI(nodeAI)}</article></div></>:<Empty text="选择或产生一条采集记录"/>}</section></main>{settingsOpen&&<div className="modal"><form onSubmit={e=>{e.preventDefault();void configure('save')}}><header><h2>AI 与主题设置</h2><button type="button" onClick={()=>setSettingsOpen(false)}>×</button></header><label>Base URL<input value={settings.baseUrl} onChange={e=>setSettings({...settings,baseUrl:e.target.value})}/></label><label>API Key<input type="password" placeholder={settings.hasApiKey?'已保存于本次浏览器会话':'sk-…'} value={apiKey} onChange={e=>setApiKey(e.target.value)}/></label><label>Model<input value={settings.model} onChange={e=>setSettings({...settings,model:e.target.value})}/></label><label>Timeout (ms)<input type="number" value={settings.timeout} onChange={e=>setSettings({...settings,timeout:Number(e.target.value)})}/></label><fieldset><legend>主题</legend>{(['system','light','dark']as ThemeMode[]).map(x=><button type="button" className={theme===x?'active':''} onClick={()=>{setTheme(x);void saveTheme(x)}} key={x}>{x}</button>)}</fieldset>{error&&<p className="error">{error}</p>}<footer><button type="button" onClick={()=>void configure('test')}>{busy==='test'?'测试中…':'测试连接'}</button><button type="submit">{busy==='save'?'保存中…':'保存'}</button></footer></form></div>}</div>}
-function Empty({text}:{text:string}){return <div className="empty"><span>⌁</span><b>{text}</b></div>}
+import { useEffect, useMemo, useState } from 'react';
+import type { CaptureEntry, IssueEntry } from '../../src/db/captureLog';
+import type { SavedAnalysis } from '../../src/ai/storage';
+import type { ThemeMode } from '../../src/theme';
+import { applyTheme, loadTheme, nextTheme, saveTheme } from '../../src/theme';
+import { analyzeCapture, groupCaptures } from '../../src/workbench/analysis';
+import { Toast } from './components/bits';
+import { DetailPanel } from './components/DetailPanel';
+import { RecordList } from './components/RecordList';
+import { SettingsModal } from './components/SettingsModal';
+import { TimelinePanel } from './components/TimelinePanel';
+import { TopBar } from './components/TopBar';
+import type { Filter, SettingsView } from './components/types';
+
+interface Data {
+  captures: CaptureEntry[];
+  issues: IssueEntry[];
+}
+
+export default function App() {
+  const [data, setData] = useState<Data>({ captures: [], issues: [] });
+  const [filter, setFilter] = useState<Filter>('all');
+  const [groupKey, setGroupKey] = useState('');
+  const [captureId, setCaptureId] = useState('');
+  const [showDiff, setShowDiff] = useState(false);
+  const [theme, setTheme] = useState<ThemeMode>('system');
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settings, setSettings] = useState<SettingsView>({ baseUrl: '', model: '', timeout: 180000 });
+  const [apiKey, setApiKey] = useState('');
+  const [busy, setBusy] = useState('');
+  const [error, setError] = useState('');
+  const [toast, setToast] = useState('');
+  const [analyses, setAnalyses] = useState<SavedAnalysis[]>([]);
+
+  useEffect(() => {
+    void chrome.runtime.sendMessage({ type: 'leetx/list-captures' }).then(setData);
+    void loadTheme().then((x) => { setTheme(x); applyTheme(x); });
+    const listener = (changes: { [key: string]: chrome.storage.StorageChange }) => {
+      if (changes['leetx:theme']) void loadTheme().then((x) => { setTheme(x); applyTheme(x); });
+    };
+    chrome.storage.onChanged.addListener(listener);
+    return () => chrome.storage.onChanged.removeListener(listener);
+  }, []);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(''), 2400);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  const groups = useMemo(() => groupCaptures(data.captures), [data]);
+  const visible = groups.filter((g) => filter === 'all' || (filter === 'luogu' ? g.platform === 'luogu' : g.platform.startsWith('leetcode')));
+  const group = visible.find((x) => x.key === groupKey) ?? visible[0];
+  const current = group?.submissions.find((x) => x.captureId === captureId) ?? group?.submissions.at(-1);
+  const index = current && group ? group.submissions.indexOf(current) : -1;
+  const previous = group && index > 0 ? group.submissions[index - 1] : undefined;
+  const local = current ? analyzeCapture(current, previous) : undefined;
+  const nodeAI = analyses.find((x) => x.id === `node:${current?.captureId}`);
+
+  useEffect(() => {
+    if (group) void chrome.runtime.sendMessage({ type: 'leetx/list-analyses', problemKey: group.problemKey }).then(setAnalyses);
+  }, [group?.problemKey]);
+
+  async function openSettings() {
+    const value = await chrome.runtime.sendMessage({ type: 'leetx/get-ai-settings' }) as SettingsView;
+    setSettings(value);
+    setSettingsOpen(true);
+  }
+
+  async function configure(action: 'save' | 'test') {
+    setBusy(action);
+    setError('');
+    try {
+      const origin = `${new URL(settings.baseUrl).origin}/*`;
+      const granted = await chrome.permissions.contains({ origins: [origin] }) || await chrome.permissions.request({ origins: [origin] });
+      if (!granted) { setError('未授予该 AI 端点的访问权限'); setBusy(''); return; }
+    } catch {
+      setError('Base URL 必须是有效的 HTTP(S) URL');
+      setBusy('');
+      return;
+    }
+    const result = await chrome.runtime.sendMessage({ type: action === 'save' ? 'leetx/save-ai-settings' : 'leetx/test-ai-connection', settings, apiKey: apiKey || undefined });
+    setBusy('');
+    if (!result.ok) setError(result.error);
+    else if (action === 'test') setToast('连接测试成功');
+    else { setSettingsOpen(false); setApiKey(''); }
+  }
+
+  async function run(scope: 'node' | 'record') {
+    if (!current || !group) return;
+    setBusy(scope);
+    setError('');
+    const result = await chrome.runtime.sendMessage(scope === 'node'
+      ? { type: 'leetx/analyze-node', current, previous }
+      : { type: 'leetx/analyze-record', problemKey: group.problemKey, submissions: group.submissions });
+    setBusy('');
+    if (result.ok === false) {
+      setError(result.error);
+      if (String(result.error).includes('配置')) void openSettings();
+    } else {
+      setAnalyses((x) => [...x.filter((a) => a.id !== result.id), result]);
+    }
+  }
+
+  return (
+    <div className="shell">
+      <TopBar
+        theme={theme}
+        captureCount={data.captures.length}
+        onCycleTheme={() => { const n = nextTheme(theme); setTheme(n); void saveTheme(n); }}
+        onOpenSettings={() => void openSettings()}
+      />
+      <main className="workspace">
+        <RecordList
+          filter={filter}
+          groups={visible}
+          activeKey={group?.key}
+          onFilter={(x) => { setFilter(x); setGroupKey(''); }}
+          onSelect={(key) => { setGroupKey(key); setCaptureId(''); }}
+        />
+        <TimelinePanel
+          group={group}
+          current={current}
+          stream={null}
+          onSelect={setCaptureId}
+          onRunRecord={() => void run('record')}
+          onCancel={() => {}}
+        />
+        <DetailPanel
+          group={group}
+          current={current}
+          index={index}
+          previous={previous}
+          showDiff={showDiff}
+          onToggleDiff={setShowDiff}
+          local={local}
+          nodeAI={nodeAI}
+          stream={null}
+          error={error}
+          onRunNode={() => void run('node')}
+          onCancel={() => {}}
+        />
+      </main>
+      {settingsOpen && (
+        <SettingsModal
+          settings={settings}
+          apiKey={apiKey}
+          busy={busy}
+          error={error}
+          onChange={setSettings}
+          onApiKey={setApiKey}
+          onClose={() => setSettingsOpen(false)}
+          onTest={() => void configure('test')}
+          onSave={() => void configure('save')}
+        />
+      )}
+      {toast && <Toast text={toast} />}
+    </div>
+  );
+}
