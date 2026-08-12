@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import type { SavedAnalysis } from '../../../src/ai/storage';
-import type { LocalAnalysis } from '../../../src/workbench/analysis';
 import { AnalysisResult } from './bits';
 import type { StreamState } from './types';
 
@@ -12,7 +11,6 @@ const scopeMeta: Record<AIScope, { tab: string; run: string; rerun: string; hint
 };
 
 export function AnalysisPanel(props: {
-  local: LocalAnalysis;
   nodeAnalysis?: SavedAnalysis;
   recordAnalysis?: SavedAnalysis;
   stream: StreamState | null;
@@ -20,7 +18,7 @@ export function AnalysisPanel(props: {
   onRun(scope: AIScope): void;
   onCancel(): void;
 }) {
-  const { local, nodeAnalysis, recordAnalysis, stream, error, onRun, onCancel } = props;
+  const { nodeAnalysis, recordAnalysis, stream, error, onRun, onCancel } = props;
   const [tab, setTab] = useState<AIScope>('node');
   const analysis = tab === 'node' ? nodeAnalysis : recordAnalysis;
   const streaming = stream?.scope === tab ? stream.text : null;
@@ -28,14 +26,6 @@ export function AnalysisPanel(props: {
 
   return (
     <article className="analysis">
-      <header>
-        <span>✦</span>
-        <div><b>本地采集分析</b><small>DETERMINISTIC · 非 AI</small></div>
-      </header>
-      <section>
-        <h3>{local.headline}</h3>
-        <ul>{local.facts.map((x) => <li key={x}>{x}</li>)}</ul>
-      </section>
       <header>
         <span>AI</span>
         <div><b>AI 分析</b><small>仅在明确点击后请求</small></div>

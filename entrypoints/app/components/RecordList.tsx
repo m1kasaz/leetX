@@ -34,7 +34,7 @@ export function RecordList(props: {
               <time>{time(x.latestAt)}</time>
             </div>
             <h3>{x.title || x.problemKey}</h3>
-            <p>{x.problemKey}<b>{x.submissions.length} 次</b></p>
+            <p><b>{x.submissions.length} 次</b></p>
           </button>
         ))}
       </div>

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { SavedAnalysis } from '../../../src/ai/storage';
 import { tokenizeCode } from '../../../src/workbench/syntaxHighlight';
 
@@ -39,13 +40,30 @@ export function Toast({ text }: { text: string }) {
   return <div className="toast" role="status"><span aria-hidden="true">✓</span>{text}</div>;
 }
 
+function MarkdownText({ text }: { text: string }) {
+  const nodes: ReactNode[] = [];
+  const pattern = /(`[^`\n]+`|\*\*[^*\n]+\*\*)/g;
+  let cursor = 0;
+  for (const match of text.matchAll(pattern)) {
+    const index = match.index ?? 0;
+    if (index > cursor) nodes.push(text.slice(cursor, index));
+    const token = match[0];
+    nodes.push(token.startsWith('`')
+      ? <code key={index}>{token.slice(1, -1)}</code>
+      : <strong key={index}>{token.slice(2, -2)}</strong>);
+    cursor = index + token.length;
+  }
+  if (cursor < text.length) nodes.push(text.slice(cursor));
+  return <>{nodes}</>;
+}
+
 export function AnalysisResult({ analysis }: { analysis?: SavedAnalysis }) {
   if (!analysis) return <p className="muted">尚未调用 AI，不会自动产生费用。</p>;
   if (analysis.content.kind === 'json') return <AnalysisDoc value={analysis.content.value} />;
   return (
-    <pre className="ai-result">
-      {analysis.content.value}
-    </pre>
+    <div className="ai-result markdown-text">
+      <MarkdownText text={analysis.content.value} />
+    </div>
   );
 }
 
@@ -59,43 +77,69 @@ const fieldLabel: Record<string, string> = {
   strengths: '做得好的地方',
   risks: '风险',
   suggestions: '建议',
+  problemUnderstanding: '题意确认',
+  coreIdea: '核心思路',
+  code: '代码',
+  exampleValidation: '示例验证',
 };
 
 function AnalysisDoc({ value }: { value: unknown }) {
   const doc = (value ?? {}) as Record<string, unknown>;
   const summary = asString(doc.summary) || asString(doc.overall) || asString(doc.conclusion);
   const complexity = asString(doc.complexity);
-  const listFields = Object.keys(doc).filter(
-    (key) => Array.isArray(doc[key]) && asList(doc[key]).length > 0,
-  );
+  const preferredListFields = ['coreIdea', 'issues', 'improvements', 'strengths', 'risks', 'suggestions'];
+  const listFields = [
+    ...preferredListFields.filter((key) => asList(doc[key]).length > 0),
+    ...Object.keys(doc).filter(
+      (key) => !preferredListFields.includes(key) && Array.isArray(doc[key]) && asList(doc[key]).length > 0,
+    ),
+  ];
   const textFields = Object.entries(doc)
-    .filter(([key, item]) => !['summary', 'overall', 'conclusion', 'complexity'].includes(key) && typeof item === 'string' && item.trim())
+    .filter(([key, item]) => !['summary', 'overall', 'conclusion', 'problemUnderstanding', 'complexity', 'code', 'exampleValidation'].includes(key) && typeof item === 'string' && item.trim())
     .map(([key, item]) => [key, (item as string).trim()] as const);
 
-  if (!summary && !complexity && listFields.length === 0 && textFields.length === 0) {
+  if (!summary && !asString(doc.problemUnderstanding) && !asString(doc.code) && !complexity && !asString(doc.exampleValidation) && listFields.length === 0 && textFields.length === 0) {
     return <pre className="ai-result">{JSON.stringify(value, null, 2)}</pre>;
   }
 
   return (
     <div className="ai-doc">
-      {summary && <p className="ai-lead">{summary}</p>}
-      {complexity && (
-        <p className="ai-complexity"><span>复杂度</span>{complexity}</p>
+      {summary && <p className="ai-lead"><MarkdownText text={summary} /></p>}
+      {asString(doc.problemUnderstanding) && (
+        <section className="ai-block">
+          <h4>题意确认</h4>
+          <p><MarkdownText text={asString(doc.problemUnderstanding)} /></p>
+        </section>
       )}
       {listFields.map((key) => (
         <section className={`ai-block ${key}`} key={key}>
           <h4>{fieldLabel[key] ?? key}</h4>
           <ul>
-            {asList(doc[key]).map((item, i) => <li key={i}>{item}</li>)}
+            {asList(doc[key]).map((item, i) => <li key={i}><MarkdownText text={item} /></li>)}
           </ul>
         </section>
       ))}
       {textFields.map(([key, item]) => (
         <section className="ai-block" key={key}>
           <h4>{fieldLabel[key] ?? key}</h4>
-          <p>{item}</p>
+          <p><MarkdownText text={item} /></p>
         </section>
       ))}
+      {asString(doc.code) && (
+        <section className="ai-block code">
+          <h4>代码</h4>
+          <pre className="ai-code"><code>{asString(doc.code)}</code></pre>
+        </section>
+      )}
+      {complexity && (
+        <p className="ai-complexity"><span>复杂度分析</span><span><MarkdownText text={complexity} /></span></p>
+      )}
+      {asString(doc.exampleValidation) && (
+        <section className="ai-block">
+          <h4>示例验证</h4>
+          <p><MarkdownText text={asString(doc.exampleValidation)} /></p>
+        </section>
+      )}
     </div>
   );
 }

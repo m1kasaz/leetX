@@ -5,7 +5,10 @@ export type AIContent = { kind: 'json'; value: unknown } | { kind: 'text'; value
 export const STREAM_IDLE_TIMEOUT_MS = 60_000;
 
 const ASCII_KEY_PATTERN = /^[\x21-\x7E]+$/;
-const SYSTEM_PROMPT = '你是编程练习分析助手。严格遵循用户给出的输出结构和长度限制，只输出最终答案。';
+const SYSTEM_PROMPT = `你是算法代码审查助手。请用中文直接分析用户提供的提交，优先指出导致错误、超时或低效的具体根因，并给出可执行的修正。
+只返回一个 JSON 对象，不要输出 Markdown 围栏或额外文字。对象必须包含以下字段且顺序固定：
+{"problemUnderstanding":"题意与根因概括","coreIdea":["具体问题或方案"],"code":"与当前提交语言一致的完整修正代码","complexity":"时间与空间复杂度","exampleValidation":"简短验证；不需要时为空字符串"}
+只依据输入事实，不知道题目细节时不要猜测。`;
 
 function assertAsciiKey(apiKey: string): void {
   if (!ASCII_KEY_PATTERN.test(apiKey)) throw new Error('API Key 包含中文、空格或不可见字符，请重新复制纯英文 Key');
@@ -24,7 +27,7 @@ function requestBody(settings: AISettings, prompt: string, stream: boolean): str
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: prompt },
     ],
-    max_tokens: 4096,
+    max_tokens: 2048,
     ...(stream ? { stream: true } : {}),
   });
 }

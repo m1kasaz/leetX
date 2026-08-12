@@ -5,7 +5,7 @@ import { streamAnalysis } from '../../src/ai/streamClient';
 import type { StreamStart } from '../../src/ai/streamProtocol';
 import type { ThemeMode } from '../../src/theme';
 import { applyTheme, loadTheme, nextTheme, saveTheme } from '../../src/theme';
-import { analyzeCapture, groupCaptures } from '../../src/workbench/analysis';
+import { groupCaptures } from '../../src/workbench/analysis';
 import { Toast } from './components/bits';
 import { DetailPanel } from './components/DetailPanel';
 import { RecordList } from './components/RecordList';
@@ -41,6 +41,9 @@ export default function App() {
     void loadTheme().then((x) => { setTheme(x); applyTheme(x); });
     const listener = (changes: { [key: string]: chrome.storage.StorageChange }) => {
       if (changes['leetx:theme']) void loadTheme().then((x) => { setTheme(x); applyTheme(x); });
+      if (changes['leetx:captureLog'] || changes['leetx:captureIssues']) {
+        void chrome.runtime.sendMessage({ type: 'leetx/list-captures' }).then(setData);
+      }
     };
     chrome.storage.onChanged.addListener(listener);
     return () => chrome.storage.onChanged.removeListener(listener);
@@ -58,7 +61,6 @@ export default function App() {
   const current = group?.submissions.find((x) => x.captureId === captureId) ?? group?.submissions.at(-1);
   const index = current && group ? group.submissions.indexOf(current) : -1;
   const previous = group && index > 0 ? group.submissions[index - 1] : undefined;
-  const local = current ? analyzeCapture(current, previous) : undefined;
   const nodeAI = analyses.find((x) => x.id === `node:${current?.captureId}`);
   const recordAI = analyses.find((x) => x.id === `record:${group?.problemKey}`);
 
@@ -148,7 +150,6 @@ export default function App() {
           previous={previous}
           showDiff={showDiff}
           onToggleDiff={setShowDiff}
-          local={local}
           nodeAI={nodeAI}
           recordAI={recordAI}
           stream={stream}

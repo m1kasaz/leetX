@@ -24,5 +24,5 @@ export const LEETCODE_SELECTORS = {
   ].join(', '),
   observerRoot: '#qd-content, #__next, main',
   heading: 'h1, [data-cy="question-title"], [class*="question-title"], [class*="text-title"]',
-  button: 'button, [role="button"]',
+  button: '[data-e2e-locator*="submit" i], [data-cy*="submit" i], button, [role="button"], input[type="submit"]',
 } as const;

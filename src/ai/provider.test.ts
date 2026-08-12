@@ -9,8 +9,13 @@ describe('provider', () => {
     expect(await requestOpenAI(settings, 'secret', 'p', fetcher)).toEqual({ kind: 'json', value: { score: 1 } });
     expect(fetcher.mock.calls[0][0]).toBe('https://a.test/v1/chat/completions');
     expect(fetcher.mock.calls[0][1].headers.Authorization).toBe('Bearer secret');
-    expect(JSON.parse(fetcher.mock.calls[0][1].body)).toMatchObject({ max_tokens: 4096 });
-    expect(JSON.parse(fetcher.mock.calls[0][1].body)).not.toHaveProperty('temperature');
+    const request = JSON.parse(fetcher.mock.calls[0][1].body);
+    expect(request).toMatchObject({ max_tokens: 2048 });
+    expect(request.messages[0]).toMatchObject({ role: 'system' });
+    expect(request.messages[0].content).toContain('算法代码审查助手');
+    expect(request.messages[0].content).toContain('complexity');
+    expect(request.messages[1]).toEqual({ role: 'user', content: 'p' });
+    expect(request).not.toHaveProperty('temperature');
   });
 
   it('rejects non-ASCII API keys', async () => {

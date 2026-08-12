@@ -1,6 +1,6 @@
 import type { CaptureEntry } from '../../../src/db/captureLog';
 import type { SavedAnalysis } from '../../../src/ai/storage';
-import type { CaptureGroup, LocalAnalysis } from '../../../src/workbench/analysis';
+import type { CaptureGroup } from '../../../src/workbench/analysis';
 import { diffLines } from '../../../src/workbench/diff';
 import { AnalysisPanel } from './AnalysisPanel';
 import { Empty, HighlightedCode } from './bits';
@@ -13,7 +13,6 @@ export function DetailPanel(props: {
   previous?: CaptureEntry;
   showDiff: boolean;
   onToggleDiff(value: boolean): void;
-  local?: LocalAnalysis;
   nodeAI?: SavedAnalysis;
   recordAI?: SavedAnalysis;
   stream: StreamState | null;
@@ -21,13 +20,13 @@ export function DetailPanel(props: {
   onRun(scope: 'node' | 'record'): void;
   onCancel(): void;
 }) {
-  const { group, current, index, previous, showDiff, onToggleDiff, local, nodeAI, recordAI, stream, error, onRun, onCancel } = props;
+  const { group, current, index, previous, showDiff, onToggleDiff, nodeAI, recordAI, stream, error, onRun, onCancel } = props;
   return (
     <section className="detail">
-      {current && group && local ? (
+      {current && group ? (
         <div className="detail-swap" key={current.captureId}>
           <header>
-            <div><span>记录</span> / {group.problemKey} / 第 {index + 1} 次提交</div>
+            <div><span>记录</span> / {group.title || group.problemKey} / 第 {index + 1} 次提交</div>
             <div>{current.language} · {current.code.length} chars</div>
           </header>
           <div className="detail-grid">
@@ -55,7 +54,6 @@ export function DetailPanel(props: {
               <footer>{current.captureMethod}<span>{current.code.split('\n').length} lines</span></footer>
             </article>
             <AnalysisPanel
-              local={local}
               nodeAnalysis={nodeAI}
               recordAnalysis={recordAI}
               stream={stream}

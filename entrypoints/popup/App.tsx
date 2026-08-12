@@ -68,7 +68,7 @@ export default function App() {
       <ul>{data.captures.slice(0, 5).map((item) => (
         <li key={item.captureId}>
           <span className={`dot ${item.verdict === 'accepted' ? 'ok' : 'warn'}`} />
-          <div><b>{item.problemKey}</b><small>{item.language} · {item.verdict ?? '等待终态'}</small></div>
+          <div><b>{item.title || item.problemKey}</b><small>{item.language} · {item.verdict ?? '等待终态'}</small></div>
         </li>
       ))}</ul>
       {!data.captures.length && <p className="empty">连接题目页后提交代码，记录会显示在这里。</p>}
