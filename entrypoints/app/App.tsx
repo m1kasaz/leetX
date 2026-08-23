@@ -146,7 +146,6 @@ export default function App() {
         <DetailPanel
           group={group}
           current={current}
-          index={index}
           previous={previous}
           showDiff={showDiff}
           onToggleDiff={setShowDiff}

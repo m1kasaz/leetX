@@ -9,7 +9,6 @@ import type { StreamState } from './types';
 export function DetailPanel(props: {
   group?: CaptureGroup;
   current?: CaptureEntry;
-  index: number;
   previous?: CaptureEntry;
   showDiff: boolean;
   onToggleDiff(value: boolean): void;
@@ -20,15 +19,11 @@ export function DetailPanel(props: {
   onRun(scope: 'node' | 'record'): void;
   onCancel(): void;
 }) {
-  const { group, current, index, previous, showDiff, onToggleDiff, nodeAI, recordAI, stream, error, onRun, onCancel } = props;
+  const { group, current, previous, showDiff, onToggleDiff, nodeAI, stream, error, onRun, onCancel } = props;
   return (
     <section className="detail">
       {current && group ? (
         <div className="detail-swap" key={current.captureId}>
-          <header>
-            <div><span>记录</span> / {group.title || group.problemKey} / 第 {index + 1} 次提交</div>
-            <div>{current.language} · {current.code.length} chars</div>
-          </header>
           <div className="detail-grid">
             <article className="code-card">
               <header>
@@ -55,7 +50,8 @@ export function DetailPanel(props: {
             </article>
             <AnalysisPanel
               nodeAnalysis={nodeAI}
-              recordAnalysis={recordAI}
+              currentCode={current.code}
+              language={current.language}
               stream={stream}
               error={error}
               onRun={onRun}

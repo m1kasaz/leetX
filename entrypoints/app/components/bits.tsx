@@ -1,5 +1,9 @@
-import type { ReactNode } from 'react';
+import { Fragment, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import type { SavedAnalysis } from '../../../src/ai/storage';
+import { toNoteDoc } from '../../../src/ai/analysisDoc';
+import { parseChangeDoc } from '../../../src/ai/changeDoc';
+import { diffLines } from '../../../src/workbench/diff';
 import { tokenizeCode } from '../../../src/workbench/syntaxHighlight';
 
 export const verdictName: Record<string, string> = {
@@ -57,9 +61,9 @@ function MarkdownText({ text }: { text: string }) {
   return <>{nodes}</>;
 }
 
-export function AnalysisResult({ analysis }: { analysis?: SavedAnalysis }) {
+export function AnalysisResult({ analysis, originalCode, language, tipsEnabled = true }: { analysis?: SavedAnalysis; originalCode?: string; language?: string; tipsEnabled?: boolean }) {
   if (!analysis) return <p className="muted">尚未调用 AI，不会自动产生费用。</p>;
-  if (analysis.content.kind === 'json') return <AnalysisDoc value={analysis.content.value} />;
+  if (analysis.content.kind === 'json') return <AnalysisDiff value={analysis.content.value} originalCode={originalCode} language={language} tipsEnabled={tipsEnabled} />;
   return (
     <div className="ai-result markdown-text">
       <MarkdownText text={analysis.content.value} />
@@ -67,78 +71,82 @@ export function AnalysisResult({ analysis }: { analysis?: SavedAnalysis }) {
   );
 }
 
-const asString = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
-const asList = (value: unknown): string[] =>
-  Array.isArray(value) ? value.map(asString).filter(Boolean) : [];
-
-const fieldLabel: Record<string, string> = {
-  issues: '存在的问题',
-  improvements: '改进建议',
-  strengths: '做得好的地方',
-  risks: '风险',
-  suggestions: '建议',
-  problemUnderstanding: '题意确认',
-  coreIdea: '核心思路',
-  code: '代码',
-  exampleValidation: '示例验证',
-};
-
-function AnalysisDoc({ value }: { value: unknown }) {
-  const doc = (value ?? {}) as Record<string, unknown>;
-  const summary = asString(doc.summary) || asString(doc.overall) || asString(doc.conclusion);
-  const complexity = asString(doc.complexity);
-  const preferredListFields = ['coreIdea', 'issues', 'improvements', 'strengths', 'risks', 'suggestions'];
-  const listFields = [
-    ...preferredListFields.filter((key) => asList(doc[key]).length > 0),
-    ...Object.keys(doc).filter(
-      (key) => !preferredListFields.includes(key) && Array.isArray(doc[key]) && asList(doc[key]).length > 0,
-    ),
-  ];
-  const textFields = Object.entries(doc)
-    .filter(([key, item]) => !['summary', 'overall', 'conclusion', 'problemUnderstanding', 'complexity', 'code', 'exampleValidation'].includes(key) && typeof item === 'string' && item.trim())
-    .map(([key, item]) => [key, (item as string).trim()] as const);
-
-  if (!summary && !asString(doc.problemUnderstanding) && !asString(doc.code) && !complexity && !asString(doc.exampleValidation) && listFields.length === 0 && textFields.length === 0) {
-    return <pre className="ai-result">{JSON.stringify(value, null, 2)}</pre>;
+// 最小改动 diff 视图：新增/删除行高亮，有解释的改动行悬浮时在左侧冒泡显示 reason
+function AnalysisDiff({ value, originalCode, language, tipsEnabled = true }: { value: unknown; originalCode?: string; language?: string; tipsEnabled?: boolean }) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [tip, setTip] = useState<{ text: string; top: number; left: number } | null>(null);
+  const doc = parseChangeDoc(value);
+  if (!doc.code) {
+    // 旧格式分析（无 code 字段）退回扁平笔记渲染
+    const legacy = toNoteDoc(value);
+    if (!legacy.lead && legacy.bullets.length === 0) return <p className="muted">分析结果为空，请重新分析。</p>;
+    return (
+      <div className="ai-doc ai-note">
+        {legacy.lead && <p className="ai-lead"><MarkdownText text={legacy.lead} /></p>}
+        <ul className="ai-points">
+          {legacy.bullets.map((item, i) => <li key={i}><MarkdownText text={item} /></li>)}
+        </ul>
+      </div>
+    );
   }
+  if (!originalCode) return <pre className="ai-code"><code><HighlightedCode code={doc.code} language={language ?? ''} /></code></pre>;
 
+  // 两侧都去掉末尾空白，避免结尾换行差被 diff 成一条空的删除行
+  const diff = diffLines(originalCode.replace(/\s+$/, ''), doc.code);
+  const changedIndexes = diff.flatMap((line, i) => (line.kind === 'same' ? [] : [i]));
+  if (changedIndexes.length === 0) return <p className="muted">AI 认为当前代码无需修改。</p>;
+
+  const reasons = new Map<number, string>();
+  const used = new Set<number>();
+  for (const change of doc.changes) {
+    const needle = change.code.trim();
+    const hit = changedIndexes.find((i) => !used.has(i) && diff[i]!.text.trim().includes(needle));
+    if (hit != null) {
+      used.add(hit);
+      reasons.set(hit, change.reason);
+    }
+    // 匹配不到改动行的 reason 直接丢弃，不额外渲染
+  }
+  // 连续的同类改动合并分组（diff-hunk 视觉上是 display:contents，仅作语义分组）
+  const segments: { kind: string; rows: { index: number; text: string; reason?: string }[] }[] = [];
+  diff.forEach((line, index) => {
+    const row = { index, text: line.text, reason: reasons.get(index) };
+    const last = segments.at(-1);
+    if (last && last.kind === line.kind) last.rows.push(row);
+    else segments.push({ kind: line.kind, rows: [row] });
+  });
+  const tipsOn = tipsEnabled && reasons.size > 0;
+  const showTip = (text: string) => (event: MouseEvent<HTMLElement>) => {
+    // 冒泡 portal 到 body、fixed 定位：垂直对齐该行，右缘贴在分析面板左缘外侧
+    const rowRect = event.currentTarget.getBoundingClientRect();
+    const panelLeft = wrapRef.current?.getBoundingClientRect().left ?? rowRect.left;
+    setTip({ text, top: rowRect.top + rowRect.height / 2, left: panelLeft });
+  };
+  const renderRow = (kind: string) => (row: { index: number; text: string; reason?: string }) => (
+    <code
+      className={`${kind}${row.reason && tipsOn ? ' chg' : ''}`}
+      key={row.index}
+      onMouseEnter={row.reason && tipsOn ? showTip(row.reason) : undefined}
+      onMouseLeave={row.reason && tipsOn ? () => setTip(null) : undefined}
+    >
+      <span>{kind === 'added' ? '+' : kind === 'removed' ? '-' : ' '}</span>
+      <HighlightedCode code={row.text} language={language ?? ''} />
+      {'\n'}
+    </code>
+  );
   return (
-    <div className="ai-doc">
-      {summary && <p className="ai-lead"><MarkdownText text={summary} /></p>}
-      {asString(doc.problemUnderstanding) && (
-        <section className="ai-block">
-          <h4>题意确认</h4>
-          <p><MarkdownText text={asString(doc.problemUnderstanding)} /></p>
-        </section>
-      )}
-      {listFields.map((key) => (
-        <section className={`ai-block ${key}`} key={key}>
-          <h4>{fieldLabel[key] ?? key}</h4>
-          <ul>
-            {asList(doc[key]).map((item, i) => <li key={i}><MarkdownText text={item} /></li>)}
-          </ul>
-        </section>
-      ))}
-      {textFields.map(([key, item]) => (
-        <section className="ai-block" key={key}>
-          <h4>{fieldLabel[key] ?? key}</h4>
-          <p><MarkdownText text={item} /></p>
-        </section>
-      ))}
-      {asString(doc.code) && (
-        <section className="ai-block code">
-          <h4>代码</h4>
-          <pre className="ai-code"><code>{asString(doc.code)}</code></pre>
-        </section>
-      )}
-      {complexity && (
-        <p className="ai-complexity"><span>复杂度分析</span><span><MarkdownText text={complexity} /></span></p>
-      )}
-      {asString(doc.exampleValidation) && (
-        <section className="ai-block">
-          <h4>示例验证</h4>
-          <p><MarkdownText text={asString(doc.exampleValidation)} /></p>
-        </section>
+    <div className="ai-diff-wrap" ref={wrapRef}>
+      <div className={`diff ai-diff${tipsOn ? ' tips' : ''}`} ref={scrollerRef} onScroll={() => setTip(null)}>
+        {segments.map((segment, si) => (
+          segment.kind === 'same'
+            ? <Fragment key={si}>{segment.rows.map(renderRow('same'))}</Fragment>
+            : <div className={`diff-hunk ${segment.kind}`} key={si}>{segment.rows.map(renderRow(segment.kind))}</div>
+        ))}
+      </div>
+      {tipsOn && tip && createPortal(
+        <div className="diff-bubble" style={{ top: tip.top, right: window.innerWidth - tip.left + 10 }}>{tip.text}</div>,
+        document.body,
       )}
     </div>
   );

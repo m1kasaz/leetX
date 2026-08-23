@@ -10,10 +10,10 @@ describe('provider', () => {
     expect(fetcher.mock.calls[0][0]).toBe('https://a.test/v1/chat/completions');
     expect(fetcher.mock.calls[0][1].headers.Authorization).toBe('Bearer secret');
     const request = JSON.parse(fetcher.mock.calls[0][1].body);
-    expect(request).toMatchObject({ max_tokens: 2048 });
+    expect(request).toMatchObject({ max_tokens: 8192 });
     expect(request.messages[0]).toMatchObject({ role: 'system' });
     expect(request.messages[0].content).toContain('算法代码审查助手');
-    expect(request.messages[0].content).toContain('complexity');
+    expect(request.messages[0].content).toContain('changes');
     expect(request.messages[1]).toEqual({ role: 'user', content: 'p' });
     expect(request).not.toHaveProperty('temperature');
   });

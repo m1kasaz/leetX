@@ -9,7 +9,7 @@
 /* Theme switch + hover color transitions */
 .topbar, .records, .timeline-panel, .detail, .code-card, .analysis, .modal form,
 .record, .node, .filters button, .top-actions button, .code-card button,
-.analysis header button, .modal button, .ok, .bad {
+.analysis header button, .modal button {
   transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 
@@ -24,11 +24,27 @@
 .record-list .record:nth-child(7) { animation-delay: 120ms; }
 .record-list .record:nth-child(n+8) { animation-delay: 140ms; }
 
+/* Record hover micro-lift */
+.record { transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), transform var(--dur-fast) var(--ease); }
+.record:hover { transform: translateX(2px); }
+
+/* Timeline node stagger-in (per selected record) */
+.timeline .node { animation: record-in var(--dur) var(--ease) backwards; }
+.timeline .node:nth-child(2) { animation-delay: 25ms; }
+.timeline .node:nth-child(3) { animation-delay: 50ms; }
+.timeline .node:nth-child(4) { animation-delay: 75ms; }
+.timeline .node:nth-child(5) { animation-delay: 100ms; }
+.timeline .node:nth-child(n+6) { animation-delay: 125ms; }
+
 /* Timeline node selection */
-.node > span { transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease); }
-.node.active > span { box-shadow: 0 0 0 3px color-mix(in srgb, var(--lime) 25%, transparent); }
+.node {
+  transition: transform var(--dur-fast) var(--ease), background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.node.ok.active { box-shadow: 0 0 0 3px color-mix(in srgb, var(--lime) 30%, transparent); }
+.node.bad.active { box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 30%, transparent); }
+.node.pending.active { box-shadow: 0 0 0 3px color-mix(in srgb, #657086 30%, transparent); }
 @keyframes node-pop { 0% { transform: scale(.6); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
-.node.active > span { animation: node-pop var(--dur-slow) var(--ease); }
+.node.active { animation: node-pop var(--dur-slow) var(--ease); }
 
 /* Detail content switch fade */
 @keyframes detail-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }

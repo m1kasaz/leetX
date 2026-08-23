@@ -17,7 +17,7 @@ function codeBlock(label: string, code: string): string {
 
 export function nodeAnalysisPrompt(current: CaptureEntry, previous?: CaptureEntry): string {
   const parts = [
-    '任务：分析本次提交。只依据给定代码指出根因并给出修正后的完整代码；不要复述通用解题模板。',
+    '任务：审查本次提交的代码，给出最小改动后的修正代码；不要输出其他分析。',
     `题目：${current.title || current.problemKey}`,
     `语言：${current.language}`,
     `判题：${current.verdict ?? 'pending'}`,
@@ -36,7 +36,7 @@ export function recordAnalysisPrompt(problemKey: string, submissions: CaptureEnt
   const title = final?.title || problemKey;
   const verdicts = recent.map(item => `${item.language}:${item.verdict ?? 'pending'}`).join(', ');
   return [
-    '任务：概括这道题的提交演进，重点说明最终方案、曾出现的根因和可改进点；不要复述通用解题模板。',
+    '任务：审查这道题的最终代码，给出最小改动后的修正代码；不要输出其他分析。',
     `题目：${title}`,
     `提交总数：${submissions.length}`,
     `最近状态：${verdicts}`,
