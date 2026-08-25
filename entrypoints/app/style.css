@@ -1593,3 +1593,97 @@ pre {
 .analysis .ai-note .ai-points li{margin:0;color:var(--text);font-size:13px;line-height:1.75}
 .analysis .ai-note .ai-code{margin:0;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--subtle);white-space:pre;overflow-x:auto}
 .analysis .ai-note .ai-code code{padding:0;border:0;background:none;color:var(--text);font:500 12.5px/1.65 ui-monospace,'SFMono-Regular',Consolas,'Liberation Mono',monospace}
+
+/* Daily submission heatmap */
+.heatmap {
+  margin:0 12px 12px
+}
+.heatmap-head {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin-bottom:6px
+}
+.heatmap-head small {
+  flex:1;
+  color:var(--muted);
+  font:8px 'DM Mono'
+}
+.heatmap-head .tip-switch {
+  margin-left:0
+}
+.heatmap.off .heatmap-grid {
+  opacity:.45
+}
+.heatmap.off .heatmap-day {
+  cursor:default
+}
+.heatmap-clear {
+  padding:2px 6px;
+  border:1px solid var(--line);
+  border-radius:5px;
+  background:transparent;
+  color:var(--muted);
+  font-size:8px;
+  cursor:pointer
+}
+.heatmap-clear:hover {
+  color:var(--text);
+  border-color:#b9f45c38
+}
+.heatmap-grid {
+  display:grid;
+  grid-auto-flow:column;
+  grid-template-rows:repeat(7,11px);
+  gap:2px;
+  justify-content:center
+}
+.heatmap-day {
+  position:relative;
+  width:11px;
+  height:11px;
+  padding:0;
+  border:0;
+  border-radius:2px;
+  background:color-mix(in srgb,var(--text) 8%,transparent);
+  cursor:pointer
+}
+.heatmap-day.l1 { background:color-mix(in srgb,var(--lime) 25%,transparent) }
+.heatmap-day.l2 { background:color-mix(in srgb,var(--lime) 45%,transparent) }
+.heatmap-day.l3 { background:color-mix(in srgb,var(--lime) 70%,transparent) }
+.heatmap-day.l4 { background:var(--lime) }
+.heatmap-day.future {
+  opacity:.25;
+  cursor:default
+}
+.heatmap-day.today { box-shadow:inset 0 0 0 1px #b9f45c99 }
+.heatmap-day.pending,.heatmap-day.in-range { box-shadow:0 0 0 1.5px var(--lime) }
+.heatmap-day::after {
+  content:attr(data-tooltip);
+  position:absolute;
+  z-index:20;
+  left:50%;
+  bottom:calc(100% + 6px);
+  transform:translate(-50%,3px);
+  padding:4px 6px;
+  border:1px solid var(--line);
+  border-radius:5px;
+  background:var(--card);
+  color:var(--text);
+  box-shadow:0 5px 16px var(--shadow);
+  font:500 9px/1.2 Manrope,sans-serif;
+  white-space:nowrap;
+  pointer-events:none;
+  opacity:0;
+  visibility:hidden;
+  transition:opacity .14s ease,transform .14s ease,visibility .14s
+}
+.heatmap-day:hover::after,.heatmap-day:focus-visible::after {
+  opacity:1;
+  visibility:visible;
+  transform:translate(-50%,0)
+}
+.heatmap-day:focus-visible {
+  outline:2px solid var(--lime);
+  outline-offset:1px
+}

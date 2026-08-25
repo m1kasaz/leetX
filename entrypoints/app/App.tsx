@@ -6,6 +6,8 @@ import type { StreamStart } from '../../src/ai/streamProtocol';
 import type { ThemeMode } from '../../src/theme';
 import { applyTheme, loadTheme, nextTheme, saveTheme } from '../../src/theme';
 import { groupCaptures } from '../../src/workbench/analysis';
+import { buildHeatmapDays, inDayRange } from '../../src/workbench/heatmap';
+import type { DayRange } from '../../src/workbench/heatmap';
 import { Toast } from './components/bits';
 import { DetailPanel } from './components/DetailPanel';
 import { RecordList } from './components/RecordList';
@@ -22,6 +24,7 @@ interface Data {
 export default function App() {
   const [data, setData] = useState<Data>({ captures: [], issues: [] });
   const [filter, setFilter] = useState<Filter>('all');
+  const [dayRange, setDayRange] = useState<DayRange | null>(null);
   const [groupKey, setGroupKey] = useState('');
   const [captureId, setCaptureId] = useState('');
   const [showDiff, setShowDiff] = useState(false);
@@ -55,8 +58,11 @@ export default function App() {
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  const groups = useMemo(() => groupCaptures(data.captures), [data]);
-  const visible = groups.filter((g) => filter === 'all' || (filter === 'luogu' ? g.platform === 'luogu' : g.platform.startsWith('leetcode')));
+  const onPlatform = (platform: string) => filter === 'all' || (filter === 'luogu' ? platform === 'luogu' : platform.startsWith('leetcode'));
+  const heatmap = useMemo(() => buildHeatmapDays(data.captures.filter((c) => onPlatform(c.platform))), [data, filter]);
+  const ranged = useMemo(() => (dayRange ? data.captures.filter((c) => inDayRange(dayRange, c.submittedAt)) : data.captures), [data, dayRange]);
+  const groups = useMemo(() => groupCaptures(ranged), [ranged]);
+  const visible = groups.filter((g) => onPlatform(g.platform));
   const group = visible.find((x) => x.key === groupKey) ?? visible[0];
   const current = group?.submissions.find((x) => x.captureId === captureId) ?? group?.submissions.at(-1);
   const index = current && group ? group.submissions.indexOf(current) : -1;
@@ -134,8 +140,11 @@ export default function App() {
         <RecordList
           filter={filter}
           groups={visible}
+          heatmap={heatmap}
+          dayRange={dayRange}
           activeKey={group?.key}
           onFilter={(x) => { setFilter(x); setGroupKey(''); }}
+          onRange={setDayRange}
           onSelect={(key) => { setGroupKey(key); setCaptureId(''); }}
         />
         <TimelinePanel

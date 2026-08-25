@@ -1,15 +1,20 @@
 import type { CaptureGroup } from '../../../src/workbench/analysis';
+import type { DayRange, HeatmapGrid } from '../../../src/workbench/heatmap';
 import { PlatformIcon, time } from './bits';
+import { HeatmapCalendar } from './HeatmapCalendar';
 import type { Filter } from './types';
 
 export function RecordList(props: {
   filter: Filter;
   groups: CaptureGroup[];
+  heatmap: HeatmapGrid;
+  dayRange: DayRange | null;
   activeKey?: string;
   onFilter(filter: Filter): void;
+  onRange(range: DayRange | null): void;
   onSelect(key: string): void;
 }) {
-  const { filter, groups, activeKey, onFilter, onSelect } = props;
+  const { filter, groups, heatmap, dayRange, activeKey, onFilter, onRange, onSelect } = props;
   return (
     <aside className="records">
       <div className="heading"><small>CAPTURE RECORDS</small><h1>刷题记录</h1></div>
@@ -26,6 +31,7 @@ export function RecordList(props: {
           </button>
         ))}
       </div>
+      <HeatmapCalendar grid={heatmap} range={dayRange} onRange={onRange} />
       <div className="record-list">
         {groups.map((x) => (
           <button key={x.key} className={`record ${activeKey === x.key ? 'active' : ''}`} onClick={() => onSelect(x.key)}>
