@@ -34,6 +34,16 @@ function ThemeIcon({ theme }: { theme: ThemeMode }) {
   );
 }
 
+function GalleryIcon() {
+  return (
+    <Icon>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="9" cy="9" r="2" />
+      <path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21" />
+    </Icon>
+  );
+}
+
 function SettingsIcon() {
   return (
     <Icon>
@@ -48,8 +58,9 @@ export function TopBar(props: {
   captureCount: number;
   onCycleTheme(): void;
   onOpenSettings(): void;
+  onOpenGallery(): void;
 }) {
-  const { theme, captureCount, onCycleTheme, onOpenSettings } = props;
+  const { theme, captureCount, onCycleTheme, onOpenSettings, onOpenGallery } = props;
   return (
     <header className="topbar">
       <div className="brand"><span>lX</span><div><b>leetX</b></div></div>
@@ -58,6 +69,9 @@ export function TopBar(props: {
         <span>{captureCount} 次提交</span>
         <button aria-label={`主题：${themeLabel[theme]}`} data-tooltip={`主题：${themeLabel[theme]}`} onClick={onCycleTheme}>
           <ThemeIcon theme={theme} />
+        </button>
+        <button aria-label="图库" data-tooltip="图库" onClick={onOpenGallery}>
+          <GalleryIcon />
         </button>
         <button aria-label="设置" data-tooltip="设置" onClick={onOpenSettings}>
           <SettingsIcon />

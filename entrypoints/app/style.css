@@ -24,7 +24,8 @@
   --faint:#596478;
   --fainter:#4f5a6d;
   --badge:#151d2b;
-  --badge-line:#273044
+  --badge-line:#273044;
+  --bg-veil:#05070c99
 }
 * {
   box-sizing:border-box
@@ -742,7 +743,8 @@ pre {
   --faint:#667085;
   --fainter:#778195;
   --badge:#edf1f7;
-  --badge-line:#cdd5e2
+  --badge-line:#cdd5e2;
+  --bg-veil:#f3f6fbb3
 }
 html[data-theme="light"] body {
   background:radial-gradient(circle at 80% -10%,#90a9dd33,transparent 35%),var(--bg)
@@ -1686,4 +1688,159 @@ pre {
 .heatmap-day:focus-visible {
   outline:2px solid var(--lime);
   outline-offset:1px
+}
+
+/* 自定义背景图：--bg-image 由 App 注入，--bg-veil 保证面板可读性 */
+html body.has-bg {
+  background-image:linear-gradient(var(--bg-veil),var(--bg-veil)),var(--bg-image);
+  background-size:cover,cover;
+  background-position:center,center;
+  background-repeat:no-repeat,no-repeat;
+  background-attachment:fixed,fixed
+}
+/* 大面板默认是不透明的，设置背景图后需要透出，否则图片被完全盖住 */
+html body.has-bg .topbar {
+  background:color-mix(in srgb,var(--topbar) var(--panel-alpha,55%),transparent)
+}
+html body.has-bg .records,html body.has-bg .timeline-panel {
+  background:color-mix(in srgb,var(--sidebar) var(--panel-alpha,55%),transparent)
+}
+html body.has-bg .detail {
+  background:color-mix(in srgb,var(--detail) var(--panel-alpha,55%),transparent)
+}
+html body.has-bg .code-card,html body.has-bg .analysis {
+  background:color-mix(in srgb,var(--card) var(--panel-alpha,55%),transparent)
+}
+html body.has-bg .top-actions button {
+  background:color-mix(in srgb,var(--panel) var(--panel-alpha,55%),transparent)
+}
+.gallery-card {
+  width:min(560px,calc(100vw - 28px));
+  max-height:calc(100vh - 60px);
+  overflow:auto;
+  padding:20px;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:14px;
+  box-shadow:0 24px 70px #0007
+}
+.gallery-card>header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:14px
+}
+.gallery-card h2 {
+  margin:0;
+  font-size:14px
+}
+.gallery-drop {
+  display:grid;
+  gap:4px;
+  place-items:center;
+  padding:26px 16px;
+  border:1.5px dashed var(--line);
+  border-radius:10px;
+  background:var(--subtle);
+  color:var(--muted);
+  text-align:center;
+  cursor:pointer;
+  transition:border-color .15s ease,background .15s ease,color .15s ease
+}
+.gallery-drop b {
+  color:var(--text);
+  font-size:11px
+}
+.gallery-drop span {
+  font-size:9px
+}
+.gallery-drop:hover,.gallery-drop.drag-over {
+  border-color:var(--lime);
+  background:var(--hover)
+}
+.gallery-drop.drag-over b {
+  color:var(--lime)
+}
+.gallery-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+  gap:10px;
+  margin-top:14px
+}
+.gallery-item {
+  position:relative;
+  display:grid;
+  gap:6px;
+  padding:6px;
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  background:var(--card);
+  color:var(--muted);
+  font-size:9px;
+  cursor:pointer;
+  transition:border-color .15s ease
+}
+.gallery-item:hover {
+  border-color:var(--muted)
+}
+.gallery-item.active {
+  border-color:var(--lime);
+  box-shadow:0 0 0 1px var(--lime)
+}
+.gallery-item img,.gallery-swatch {
+  width:100%;
+  aspect-ratio:16/10;
+  object-fit:cover;
+  border-radius:6px;
+  display:block
+}
+.gallery-swatch {
+  background:radial-gradient(circle at 80% -10%,#4764a055,transparent 60%),var(--bg)
+}
+.gallery-name {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap
+}
+.gallery-remove {
+  position:absolute;
+  top:2px;
+  right:2px;
+  width:18px;
+  height:18px;
+  display:grid;
+  place-items:center;
+  padding:0;
+  border:none;
+  border-radius:50%;
+  background:#000a;
+  color:#fff;
+  font-size:11px;
+  line-height:1;
+  cursor:pointer;
+  opacity:0;
+  transition:opacity .15s ease
+}
+.gallery-item:hover .gallery-remove,.gallery-remove:focus-visible {
+  opacity:1
+}
+.gallery-opacity {
+  display:grid;
+  gap:8px;
+  margin-top:16px;
+  color:var(--muted);
+  font-size:9px;
+  cursor:default
+}
+.gallery-opacity span {
+  display:flex;
+  justify-content:space-between
+}
+.gallery-opacity b {
+  color:var(--text)
+}
+.gallery-opacity input[type="range"] {
+  width:100%;
+  accent-color:var(--lime);
+  cursor:pointer
 }

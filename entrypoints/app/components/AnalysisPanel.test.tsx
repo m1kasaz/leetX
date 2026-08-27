@@ -24,7 +24,7 @@ describe('AnalysisPanel', () => {
 
   it('renders streaming text with a cancel button', () => {
     const onCancel = vi.fn();
-    const host = render({ stream: { scope: 'node', text: '正在输出' }, onCancel });
+    const host = render({ stream: { scope: 'node', text: '正在输出', target: 'cap-1' }, onCancel });
     expect(host.textContent).toContain('正在输出');
     const button = host.querySelector<HTMLButtonElement>('.analysis header button');
     expect(button?.textContent).toBe('取消');
