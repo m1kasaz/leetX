@@ -1,7 +1,7 @@
 # leetX
 
 本地优先的刷题记录浏览器扩展：在 LeetCode（力扣）和洛谷题目页自动采集你的提交代码与判题结果，聚合为刷题记录，并提供历史记录、提交时间线、代码对比与 AI 分析工作台。所有数据保存在浏览器本地（IndexedDB），无需自建后端。
-<img width="1404" height="772" alt="image" src="https://github.com/user-attachments/assets/5a3c11be-e345-4dce-b026-ee780dd7a71d" />
+<img width="1451" height="754" alt="image" src="https://github.com/user-attachments/assets/959af9ca-6abb-4b49-95d9-4204aa0704b1" />
 
 ## 下载与安装
 
